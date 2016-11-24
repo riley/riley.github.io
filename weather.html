@@ -14,7 +14,6 @@
 
 <title>Weather Comparison</title>
 <link href='http://fonts.googleapis.com/css?family=Lato' rel='stylesheet' type='text/css'>
-<link href="css/weather.css" rel="stylesheet" type="text/css">
 <style>
 body {padding: 0; margin: 0;}
 * { font-family: 'Lato', sans-serif; }
@@ -177,7 +176,7 @@ var byId = document.getElementById.bind(document);
         ['averages', 'dailies'].forEach(function (file, i, fileList) {
 
             var xhr = new XMLHttpRequest();
-            xhr.open('GET', 'data/' + file + '.json');
+            xhr.open('GET', '/data/' + file + '.json');
             xhr.onload = function () {
                 if (xhr.status === 200) {
                     var json = JSON.parse(xhr.responseText);
