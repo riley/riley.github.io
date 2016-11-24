@@ -15,6 +15,104 @@
 <title>Weather Comparison</title>
 <link href='http://fonts.googleapis.com/css?family=Lato' rel='stylesheet' type='text/css'>
 <link href="css/weather.css" rel="stylesheet" type="text/css">
+<style>
+body {padding: 0; margin: 0;}
+* { font-family: 'Lato', sans-serif; }
+main { overflow: hidden; }
+article { position: relative; }
+h1, .subhead {text-align: center;}
+.axis path,
+.axis line {
+    fill: none;
+    stroke: #000;
+    stroke-opacity: .3;
+    shape-rendering: crispEdges;
+}
+
+.axis text {
+    font-size: 11px;
+    fill: #888;
+    -webkit-user-select: none;  /* Chrome all / Safari all */
+    -moz-user-select: none;     /* Firefox all */
+    -ms-user-select: none;      /* IE 10+ */
+    user-select: none;
+}
+
+.x .tick line {
+    shape-rendering: crispEdges;
+    stroke: #000;
+    stroke-width: 1px;
+    stroke-dasharray: 2,2;
+    stroke-opacity: .3;
+}
+
+.precip { fill: none; stroke: lightblue; stroke-width: 1px; }
+
+.median { stroke: black; stroke-width: 1px; fill: none; }
+
+.average-bar, .quart, .bar, .median { pointer-events: none; }
+
+.s-ticks { stroke: grey; stroke-width: 1px; fill: none; }
+
+.weather-legend text { font-size: 11px; }
+
+#sunshine .y .tick line, #sunshine path { stroke-opacity: 0; }
+
+.cities { padding: 0; margin: 0; }
+
+.cities li {
+    list-style: none;
+    background: white;
+    border: 1px solid #ddd;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+    color: #888;
+    font-size: 18px;
+    text-align: center;
+    margin: 0px 4px;
+    padding: 4px 6px;
+}
+
+.cities li:first-child { border-radius: 4px 4px 0 0; }
+.cities li:last-child { border-radius: 0 0 4px 4px; }
+.cities li.active { background: #f0f0f0; color: #222; box-shadow: inset 0 1px 2px rgba(0,0,0,0.1); }
+
+.sunshine-label {
+    padding-left: 70px;
+    margin-bottom: 0;
+    border-top: 1px dashed #ccc;
+    padding-top: 20px;
+}
+
+.cta { display: none; }
+
+#readout-date { font-size: 20px; margin: 0; color: rgba(255, 0, 0, .5); }
+#readout-high-low { font-size: 12px; color: rgba(255, 0, 0, .5); }
+#readout-avg-high, #readout-avg-low { font-size: 12px; margin: 5px 0; color: #aec7e8; }
+.readout { position: relative; left: 20px; }
+
+@media (min-width: 600px) {
+    .weather-legend { position: absolute; top: 0; left: 0; }
+    .cities { padding: 0; text-align: center; }
+    .cities li {
+        cursor: pointer;
+        display: inline-block;
+        -webkit-touch-callout: none;
+        -webkit-user-select: none;
+        -khtml-user-select: none;
+        -moz-user-select: none;
+        -ms-user-select: none;
+        user-select: none;
+        margin: 0;
+        transition: background-color .3s;
+    }
+
+    .cities li:first-child { border-radius: 4px 0 0 4px; }
+    .cities li:last-child { border-radius: 0 4px 4px 0; }
+    .cities li:hover { background: #ccc; color: #000; }
+    .cta { display: block; text-align: center; }
+    .readout { position: absolute; top: 250px; left: 20px; }
+}
+</style>
 </head>
 <body>
     <main>
@@ -35,7 +133,7 @@
             <svg id="sunshine"></svg>
         </article>
     </main>
-<script src="js/d3.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/4.4.0/d3.min.js"></script>
 <script>
 /* global d3 */
 'use strict';
