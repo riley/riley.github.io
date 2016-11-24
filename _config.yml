@@ -1,11 +1,11 @@
 # Site wide configuration
 
-title: Riley Davis Online
+title: Riley Davis
 locale: en_US
-description: Describe your website here.
+description: fixing the comments at @coralproject, formerly @tumblr & @nytimes. Making the internet.
 logo: site-logo.png
 search: true
-url: https://riley.github.io
+url: http://localhost:4000
 
 # Jekyll configuration
 

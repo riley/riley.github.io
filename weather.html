@@ -1,0 +1,497 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta http-equiv="Content-type" content="text/html; charset=utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+
+<meta property="og:image" content="http://rileydav.is/images/weather_og.png" />
+<meta property="og:title" content="City Weather Comparison Data Visualization" />
+<meta property="og:site_name" content="Portfolio of Riley Davis" />
+<meta property="og:url": content="http://rileydav.is/demos/weather.html" />
+<meta property="og:description" content="All my friends scattered to the wind after college and left Kansas City for other places in the country. There are arguments about what city has the best beer and the best weather, but still offers lots to do, and is relatively close to our families. A couple of our friends are moving to Portland and while it sounds pretty great, my wife gets a bit of the Seasonal Affective Disorder if it's too cloudy. I thought I would find out for myself just how cloudy it really is. Is it cloudy all day? Or is it cloudy in the morning like in San Francisco? This visualization is my attempt to quantify weather conditions and such." />
+<meta property="og:type" content="article" />
+<meta property="og:locale" content="en_US" />
+
+<title>Weather Comparison</title>
+<link href='http://fonts.googleapis.com/css?family=Lato' rel='stylesheet' type='text/css'>
+<link href="css/weather.css" rel="stylesheet" type="text/css">
+</head>
+<body>
+    <main>
+        <h1>Average Daily Temperature 1995 - 2014</h1>
+        <p class="subhead">With added bonus sunshine amounts</p>
+        <article>
+            <svg id="weather-legend" class="weather-legend"></svg>
+            <div class="readout">
+                <p id="readout-date">January 1, 2014</p>
+                <p id="readout-high-low">High: Low:</p>
+                <p id="readout-avg-high">20 Year Avg High:</p>
+                <p id="readout-avg-low">20 Year Avg Low:</p>
+            </div>
+            <svg id="weather"></svg>
+            <p class="cta">Hover over graph to see 2014 temperatures</p>
+            <ul id="cities" class="cities"></ul>
+            <p class="sunshine-label">And sunshine of all cities</p>
+            <svg id="sunshine"></svg>
+        </article>
+    </main>
+<script src="js/d3.min.js"></script>
+<script>
+/* global d3 */
+'use strict';
+
+NodeList.prototype.forEach = Array.prototype.forEach;
+var byId = document.getElementById.bind(document);
+
+(function () {
+    var cities = [];
+    var loaded = 0;
+
+    var svg;
+    var x, y;
+    var width, height;
+    // var line;
+    var averages, dailies;
+
+    var bars;
+    var barWidth;
+
+    var rows;
+
+    var trailColor = '#aec7e8';
+    var centerColor = '#1f77b4';
+    var sunshineColor = '#ed0';
+
+    var months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+
+    // an integer between 0 - 364
+    var currentDate = 0;
+    var currentCity;
+
+    function loadData() {
+        var cityUl = byId('cities');
+
+        function toDate(o) {
+            o.date = new Date(o.date);
+        }
+
+        // load pertinent data files
+        ['averages', 'dailies'].forEach(function (file, i, fileList) {
+
+            var xhr = new XMLHttpRequest();
+            xhr.open('GET', 'data/' + file + '.json');
+            xhr.onload = function () {
+                if (xhr.status === 200) {
+                    var json = JSON.parse(xhr.responseText);
+                    if (file === 'averages') {
+                        averages = json;
+                        cities = Object.keys(averages);
+
+                        // create a list of city buttons to manipulate chart
+                        Object.keys(averages).forEach(function (city, i) {
+                            cityUl.insertAdjacentHTML('beforeend', '<li class="city-name">' + city + '</li>');
+                            cityUl.childNodes[cityUl.childNodes.length - 1].addEventListener('click', updateCity);
+                            if (i === 0) { // set first city to active
+                                cityUl.childNodes[0].classList.add('active');
+                                currentCity = city;
+                            }
+
+                            averages[city].forEach(toDate); // transform ISO strings into Date objects
+                        });
+                    } else if (file === 'dailies') {
+                        dailies = json;
+                        Object.keys(dailies).forEach(function (city) {
+                            dailies[city].forEach(toDate);
+                        });
+                    }
+
+                    if (++loaded === fileList.length) draw();
+                } else {
+                    console.log('failed to load file ' + file + ' ' + xhr.status);
+                }
+            };
+            xhr.send(null);
+        });
+    }
+
+    function draw() {
+        console.log('averages', averages, 'dailies', dailies);
+
+        var margin = {top: 40, right: 50, bottom: 60, left: window.innerWidth < 600 ? 40 : 240};
+        width = window.innerWidth - margin.left - margin.right;
+        height = Math.max(window.innerWidth / 3, 200) - margin.top - margin.bottom;
+        barWidth = Math.max(width / 365 - 1, 1);
+
+        var initCity = cities[0];
+
+        x = d3.time.scale()
+            .domain([new Date(2014, 0, 1), new Date(2014, 11, 31)])
+            .range([0, width]);
+        y = d3.scale.linear().domain([0, 100]).range([height, 0]);
+
+        var yAxis = d3.svg.axis()
+            .scale(y)
+            .orient('left')
+            .ticks(5);
+
+        var xAxis = d3.svg.axis()
+            .scale(x)
+            .orient('bottom')
+            .ticks(d3.time.months)
+            .tickFormat(d3.time.format('%B'));
+
+        svg = d3.select('#weather')
+            .attr('width', width + margin.left + margin.right)
+            .attr('height', height + margin.top + margin.bottom)
+            .append('g')
+                .attr('transform', 'translate(' + margin.left + ',' + margin.top + ')');
+
+        // add the tick marks on y axis
+        svg.append('g')
+            .attr('class', 'y axis left')
+            .call(yAxis)
+            .append('text')
+                .attr('transform', 'rotate(-90)')
+                .attr('y', 6)
+                .attr('dy', '.71em')
+                .style('text-anchor', 'end')
+                .text('temp °F');
+
+        svg.append('g') // x axis month labels
+            .attr('class', 'x axis')
+            .attr('transform', 'translate(0,' + y(0) + ')') // cross @ 0
+            .call(xAxis)
+            .selectAll('.tick text')
+                .style('text-anchor', 'start')
+                .attr('transform', 'rotate(45)')
+                .attr('x', 6)
+                .attr('y', 6);
+
+        svg.selectAll('.x .tick line')
+            .attr('transform', 'translate(0,' + -height + ')')
+            .attr('y2', height);
+
+        // sunshine for one city
+        svg.selectAll('.conditions')
+            .data(dailies[initCity])
+            .enter().append('rect')
+                .attr('class', 'conditions')
+                .attr('x', function (d) { return x(d.date); })
+                .attr('y', y(105))
+                .attr('width', barWidth)
+                .attr('height', y(97))
+                .attr('fill', sunshineColor)
+                .attr('fill-opacity', function (d) { return d.conds; });
+
+        // averages
+        svg.selectAll('.average-bar')
+            .data(averages[initCity])
+            .enter().append('rect')
+                .attr('class', 'average-bar')
+                .attr('x', function (d) { return x(d.date); })
+                .attr('y', function (d) { return y(d.max); })
+                .attr('width', barWidth)
+                .attr('height', function (d) { return height - y(d.max - d.min); })
+                .attr('fill', trailColor);
+                // .attr('fill-opacity', 0.5);
+
+
+        // draw inner quartile
+        svg.selectAll('.quart')
+            .data(averages[initCity])
+            .enter().append('rect')
+                .attr('class', 'quart')
+                .attr('x', function (d) { return x(d.date); })
+                .attr('y', function (d) { return y(d3.quantile(d.avgs, 0.75)); })
+                .attr('width', barWidth)
+                .attr('height', function (d) {
+                    return height - y(d3.quantile(d.avgs, 0.75) - d3.quantile(d.avgs, 0.25));
+                })
+                .attr('fill', centerColor);
+
+        // draw the median
+        svg.selectAll('.median')
+            .data(averages[initCity])
+            .enter().append('line')
+                .attr('class', 'median')
+                .attr('x1', function (d) { return x(d.date); })
+                .attr('x2', function (d) { return x(d.date) + barWidth; })
+                .attr('transform', function (d) { return 'translate(0,' + y(d3.quantile(d.avgs, 0.5)) + ')'; });
+
+        // add all the 2014 bars
+        bars = svg.selectAll('.bar')
+            .data(dailies[initCity])
+            .enter().append('rect')
+                .attr('class', 'bar')
+                .attr('x', function (d) { return x(d.date); })
+                .attr('y', function (d) { return y(d.high); })
+                .attr('width', barWidth)
+                .attr('height', function (d) { return height - y(d.high - d.low); })
+                .attr('fill', 'black')
+                .attr('fill-opacity', 0);
+
+        svg.selectAll('.hit')
+            .data(dailies[initCity])
+            .enter().append('rect')
+                .attr('class', 'hit')
+                .attr('x', function (d) { return x(d.date); })
+                .attr('y', 0)
+                .attr('width', barWidth)
+                .attr('height', height)
+                .attr('fill', '#000')
+                .attr('fill-opacity', 0)
+                .on('mouseover', showDetail);
+
+        drawSunshine();
+
+        drawLegend();
+    }
+
+    function drawSunshine() {
+        var margin = {top: 0, right: 50, bottom: 30, left: 70};
+        var sWidth = window.innerWidth - margin.left - margin.right;
+        var sHeight = Math.max(height / 3, 150) - margin.top - margin.bottom;
+        var sBarWidth = Math.max(sWidth / 365, 1);
+        var sY = d3.scale.linear().domain([0, cities.length]).range([sHeight, 0]);
+        var sX = d3.time.scale()
+            .domain([new Date(2014, 0, 1), new Date(2014, 11, 31)])
+            .range([0, sWidth]);
+
+        /* show the sunshine measurements in one grid */
+        var svg = d3.select('#sunshine')
+            .attr('width', sWidth + margin.left + margin.right)
+                .attr('height', sHeight + margin.top + margin.bottom)
+                .append('g')
+                    .attr('transform', 'translate(' + margin.left + ',' + margin.top + ')');
+
+        var sunYAxis = d3.svg.axis()
+            .scale(sY)
+            .orient('left')
+            .tickFormat(function (d, i) { return cities[i]; })
+            .tickValues(d3.range(cities.length));
+
+        svg.append('g')
+            .attr('class', 'y axis')
+            .call(sunYAxis)
+            .attr('transform', 'translate(0,' + sY(cities.length - 1) / 2 + ')');
+
+        rows = svg.selectAll('.row')
+            .data(cities)
+            .enter().append('g')
+                .attr('class', 'row')
+                .attr('transform', function (d, i) { return 'translate(0, ' + sY(i) + ')'; })
+                .on('mouseover', handleEnterSun);
+
+        rows.selectAll('.sun')
+            .data(function (d) { return dailies[d]; })
+            .enter().append('rect')
+                .attr('class', 'sun')
+                .attr('x', function (d) { return sX(d.date); })
+                .attr('width', sBarWidth)
+                .attr('height', function () { return sY(cities.length - 1) - 2; })
+                .attr('fill', sunshineColor)
+                .attr('stroke-width', 0)
+                .attr('fill-opacity', function (d) { return d.conds; });
+    }
+
+    function drawLegend() {
+        var x = d3.scale.linear();
+        var lBarWidth = Math.max(barWidth, 4);
+        var svg = d3.select('#weather-legend')
+            .attr('width', 240)
+            .attr('height', 230)
+            .append('g')
+                .attr('transform', 'translate(50, 20)');
+
+        var qGroup = svg.append('g')
+            .attr('transform', 'translate(0, 0)');
+
+        // data tails
+        qGroup.append('rect')
+            .attr('fill', trailColor)
+            .attr('width', lBarWidth)
+            .attr('height', 150);
+
+        // inner quartile range
+        qGroup.append('rect')
+            .attr('fill', centerColor)
+            .attr('width', lBarWidth)
+            .attr('height', 50)
+            .attr('y', 50);
+
+        // median mark
+        qGroup.append('path')
+            .attr('stroke', 'black')
+            .attr('stroke-width', 2)
+            .attr('d', 'M0 0 l' + lBarWidth + ' 0')
+            .attr('transform', 'translate(0, 75)');
+
+        // have to use two text elements since SVG does not support line breaks
+        qGroup.append('text')
+            .attr('transform', 'translate(7, 10)')
+                .text('highest');
+
+        qGroup.append('text')
+            .attr('transform', 'translate(7, 24)')
+                .text('daily avg');
+
+
+        qGroup.append('text')
+            .attr('transform', 'translate(7, 132)')
+                .text('lowest');
+
+        qGroup.append('text')
+            .attr('transform', 'translate(7, 146)')
+                .text('daily avg');
+
+        // little bracket thingy
+        qGroup.append('path')
+            .attr('fill', 'none')
+            .attr('stroke', 'black')
+            .attr('stroke-width', 1)
+            .attr('d', 'M' + (lBarWidth + 2) + ' 50 l 10 0 l 0 50 l -10 0');
+
+        qGroup.append('text')
+            .attr('transform', 'translate(20, 72)')
+                .text('interquartile');
+        qGroup.append('text')
+            .attr('transform', 'translate(20, 82)')
+                .text('range');
+
+        qGroup.append('text')
+            .attr('transform', 'translate(-5, 80)')
+            .attr('font-size', 11)
+            .attr('text-anchor', 'end')
+            .text('Median');
+
+        // add shades for sunshine colors
+        svg.selectAll('.sunshine-keys')
+            .data([0, 0.2, 0.4, 0.6, 0.8, 1])
+            .enter().append('rect')
+                .attr('class', 'sunshine-keys')
+                .attr('fill', sunshineColor)
+                .attr('fill-opacity', function (d) { return d; })
+                .attr('height', lBarWidth)
+                .attr('width', 20)
+                .attr('x', function (d, i) { return i * 20; })
+                .attr('y', 180);
+
+        // tick marks on sunshine legend
+        svg.selectAll('.s-ticks')
+            .data([0, 0.2, 0.4, 0.6, 0.8, 1])
+            .enter().append('path')
+                .attr('class', 's-ticks')
+                .attr('d', function (d) { return 'M' + (120 * d) + ' 180 l0 ' + lBarWidth; });
+
+        svg.append('text')
+            .attr('transform', 'translate(0, 200)')
+                .attr('text-anchor', 'middle')
+                .text('overcast');
+
+        svg.append('text')
+            .attr('transform', 'translate(122, 200)')
+                .attr('text-anchor', 'middle')
+                .text('sunny');
+
+        var yGroup = svg.append('g')
+            .attr('transform', 'translate(114, 0)');
+
+        yGroup.append('rect')
+            .attr('fill', 'black')
+            .attr('fill-opacity', 0.5)
+            .attr('width', lBarWidth)
+            .attr('height', 150);
+
+        yGroup.append('text')
+            .attr('x', 10)
+            .attr('y', 4)
+            .text('2014');
+
+        yGroup.append('text')
+            .attr('x', 10)
+            .attr('y', 18)
+            .text('high');
+
+        yGroup.append('text')
+            .attr('x', 10)
+            .attr('y', 144)
+            .text('2014');
+
+        yGroup.append('text')
+            .attr('x', 10)
+            .attr('y', 158)
+            .text('low');
+    }
+
+    function updateCity(e) {
+
+        currentCity = e.target.textContent;
+
+        console.log(e);
+        svg.selectAll('.bar')
+            .data(dailies[currentCity])
+            .transition()
+            .attr('y', function (d) { return y(d.high); })
+            .attr('height', function (d) { return height - y(d.high - d.low); });
+
+        // averages
+        svg.selectAll('.average-bar')
+            .data(averages[currentCity])
+            .transition()
+                .attr('y', function (d) { return y(d.max); })
+                .attr('height', function (d) { return height - y(d.max - d.min); });
+
+        svg.selectAll('.quart')
+            .data(averages[currentCity])
+            .transition()
+                .attr('y', function (d) { return y(d3.quantile(d.avgs, 0.75)); })
+                .attr('height', function (d) {
+                    return height - y(d3.quantile(d.avgs, 0.75) - d3.quantile(d.avgs, 0.25));
+                });
+
+        svg.selectAll('.median')
+            .data(averages[currentCity])
+            .transition()
+                .attr('transform', function (d) { return 'translate(0,' + y(d3.quantile(d.avgs, 0.5)) + ')'; });
+
+        svg.selectAll('.conditions')
+            .data(dailies[currentCity])
+            .transition()
+                .attr('fill-opacity', function (d) { return d.conds; });
+
+        document.querySelectorAll('.city-name').forEach(function (node) { node.classList.remove('active'); });
+        e.target.classList.add('active');
+
+    }
+
+    // this is the hover handler for the main chart.
+    function showDetail(datum, index) {
+        var spread = 20;
+        var today = new Date(2014, 0, index + 1);
+        bars.attr('fill-opacity', function (d, i) {
+            var offset = Math.abs(i - index);
+            return (offset < spread) ? 0.5 : 0;
+        })
+        .attr('fill', function (d, i) { return (i === index) ? 'red' : 'black'; });
+
+        currentDate = index;
+        byId('readout-date').textContent = months[today.getMonth()] + ' ' + today.getDate() + ', 2014';
+        byId('readout-high-low').textContent = 'High: ' + dailies[currentCity][currentDate].high + '°F Low: ' + dailies[currentCity][currentDate].low + '°F';
+        byId('readout-avg-high').textContent = '20 Year Avg High: ' + averages[currentCity][currentDate].max + '°F';
+        byId('readout-avg-low').textContent = '20 Year Avg Low: ' + averages[currentCity][currentDate].min + '°F';
+    }
+
+    // mouse handlers to highlight the sunny day groups
+    function handleEnterSun (datum, i) {
+        rows.attr('opacity', function (d, i) { return (datum === d) ? 1 : 0.2; });
+    }
+
+    window.addEventListener('orientationchange', function () {
+        console.log('orientation change');
+    });
+
+    loadData();
+})();
+</script>
+</body>
+</html>
