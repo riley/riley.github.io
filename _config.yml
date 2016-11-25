@@ -5,7 +5,7 @@ locale: en_US
 description: fixing the comments at @coralproject, formerly @tumblr & @nytimes. Making the internet.
 logo: site-logo.png
 search: true
-url: https://riley.github.io
+# url: http://rileydav.is
 
 # Jekyll configuration
 
