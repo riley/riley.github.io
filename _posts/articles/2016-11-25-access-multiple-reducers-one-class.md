@@ -71,7 +71,7 @@ class UserProfile extends React.Component {
     // and comment state will be on this.props.comments
     return (
       <div>
-        <p>User Name: {this.props.user.username}</p>
+        <p>User Name: {this.props.users.username}</p>
         <ul>
           {this.props.comments.userComments.map(comment => {
             return <li>{comment.body}</li>
