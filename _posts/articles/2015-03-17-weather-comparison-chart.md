@@ -9,10 +9,6 @@ share: true
 modified: 2015-03-17T14:17:50-04:00
 ---
 
-## Weather Comparison Chart
-
-#### March 17, 2015
-
 [![weather chart thumbnail](/images/weather_thumb.png)](/weather.html)
 
 All my friends scattered to the wind after college and left Kansas City for other places in the country. Now, a few years after this diaspora, and a couple of children later, we talk about getting back together. There are arguments about what city has the best beer and the best weather, but still offers lots to do, and is relatively close to our families. No one city has the best of everything. A couple of our friends are moving to Portland and while it sounds pretty great, my wife gets a bit of the [SAD](http://www.mayoclinic.org/diseases-conditions/seasonal-affective-disorder/basics/definition/con-20021047) if it's too cloudy.
