@@ -69,11 +69,12 @@ class UserProfile extends React.Component {
   render() {
     // any properties from the UserReducer state will be available on this.props.users
     // and comment state will be on this.props.comments
+    const {users, comments} = this.props;
     return (
       <div>
-        <p>User Name: {this.props.users.username}</p>
+        <p>User Name: {users.username}</p>
         <ul>
-          {this.props.comments.userComments.map(comment => {
+          {comments.userComments.map(comment => {
             return <li>{comment.body}</li>
           })}
         </ul>
