@@ -2,19 +2,19 @@
 layout: post
 title: "Getting state from multiple reducers with redux"
 modified:
-categories: blog
+categories: articles
 excerpt: using mapStateToProps to use multiple reducers
 tags: [react, react-redux]
 date: 2016-11-25T15:39:55-04:00
 ---
 
-As your app gets bigger, your actions and reducers files are going to get longer and longer until there's a giant list of constants, and the initial state is difficult to reason about. The bigger your initial state, the more likely it is that you're going to have duplicated functionality, especially with a team of developers. So you think to yourself, "Self, you're so handsome/pretty. And I should break these actions out into several grouped files. But how should I do this?" 
+As your app gets bigger, your actions and reducers files are going to get longer and longer until there's a giant list of constants, and the initial state is difficult to reason about. The bigger your initial state, the more likely it is that you're going to have duplicated functionality, especially with a team of developers. So you think to yourself, "Self, you're so handsome/pretty. And I should break these actions out into several grouped files. But how should I do this?"
 
-Your first thought is going to be to break them out by page of the application that you're building. Resist this temptation, because it's going to create much more work for you later. If the action creators and their corresponding reducers are grouped by page, that are going to be difficult to pull apart later. There's a bunch of loosely related actions and state, and as the product requirements grow, you'll just add them to the end of the file. 
+Your first thought is going to be to break them out by page of the application that you're building. Resist this temptation, because it's going to create much more work for you later. If the action creators and their corresponding reducers are grouped by page, that are going to be difficult to pull apart later. There's a bunch of loosely related actions and state, and as the product requirements grow, you'll just add them to the end of the file.
 
-But what happens if the stakeholders want to move some widget to another page because it makes more sense to the end user? Then you have to hunt all through the files (and many display components) and update everything piecemeal. Or (more likely) you'll just never have time for a refactor because of deadlines and the files will get all lopsided as different pages of the app have more features developed than others. 
+But what happens if the stakeholders want to move some widget to another page because it makes more sense to the end user? Then you have to hunt all through the files (and many display components) and update everything piecemeal. Or (more likely) you'll just never have time for a refactor because of deadlines and the files will get all lopsided as different pages of the app have more features developed than others.
 
-Take a minute to think about your application, and break it up by domain. Group the actions and state by looking at how you've set up your data on the backend. 
+Take a minute to think about your application, and break it up by domain. Group the actions and state by looking at how you've set up your data on the backend.
 
 Let's say you're building a movie database where users can comment about how great/awful the movies are. At first you'd think there should be an `Account` state for the user's account screen, and a `Forum` actions file that controls loading of comments for each movie page. Instead, think about the entities at play here. `User`, `Movie`, `Comment`. This is much more flexible in the long run, and much easier on which to test and bring another developer up to speed.
 
@@ -61,7 +61,7 @@ class UserProfile extends React.Component {
   static propTypes = {
     userId: PropTypes.string.isRequired
   }
-  
+
   componentWillMount() {
     this.props.dispatch(fetchComments(this.props.userId));
   }
